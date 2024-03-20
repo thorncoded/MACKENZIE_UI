@@ -1,23 +1,70 @@
 import urwid
 import sys
 import curses
+import csv
+
+
+# Define a palette with color attributes
+palette = [
+    ('sko', 'light blue', 'default'),    # Body text
+    ('mak', 'light magenta', 'default'),  
+]
+
+# dialog array of lines
+dialogDict = {}
+starterDialog = ""
+listIndex = 0
 
 def set_window_title(title):
     curses.setupterm()
     sys.stdout.write("\x1b]2;{}\x07".format(title))
     sys.stdout.flush()
 
+def readDialogCSVFile(fileName):
+    with open(fileName, 'r') as data:
+        reader = csv.reader(data, delimiter="@")
+        for row in reader:
+            # Assuming each row has at least two columns
+            key, value = row[:2]  # Extract the first two elements from the row
+            dialogDict[key] = value  # Assign the key-value pair to the dictionary
+
+class AutoScrollListBox(urwid.ListBox):
+    def __init__(self, body):
+        super().__init__(urwid.SimpleFocusListWalker(body))
+
+    def add_line(self, line, character):
+        text = urwid.Text(line)
+        if character == "sko":
+            text = urwid.AttrMap(text, 'sko')
+        if character == "mak":
+            text = urwid.AttrMap(text, 'mak')
+        if character == "lucas":
+            text = urwid.AttrMap(text, "lucas")
+        self.body.append(text)
+
+        # Scroll to the bottom
+        self.set_focus(len(self.body) - 1)
+
 class DashboardUI:
     orders_txt: urwid.widget.Text
 
+    def __init__(self):
+        self.txt = urwid.Text(starterDialog)
+        self.listbox = AutoScrollListBox([self.txt])
+
     def show_or_exit(self, key):
-        set_window_title("MACKENZIE.EXE")  # Set window title immediately
+        global starterDialog, listIndex  # Declare global variables
+        set_window_title("MACKENZIE.EXE")  # Set the window title
         if key in ('q', 'Q'):
             raise urwid.ExitMainLoop()
-        self.orders_txt.set_text(repr(key))
+        if listIndex != len(dialogDict) - 1:
+            listIndex += 1
+        # Add the line to the custom list box and scroll to the bottom
+        line = list(dialogDict.keys())[listIndex]
+        character = dialogDict[line]
+        self.listbox.add_line(line, character)
 
     def show(self):
-        
         algo_view = urwid.Text(u"Main Content Goes Here")
         algo_view_fill = urwid.Filler(algo_view, 'top')
         algo_view_linebox = urwid.LineBox(algo_view_fill,
@@ -44,9 +91,13 @@ class DashboardUI:
 
         right_pile = urwid.Pile([orders_linebox, counters_linebox, resources_linebox])
 
-        layout = urwid.Columns([('weight', 3, algo_view_linebox), right_pile], dividechars=0)
+        layout = urwid.Columns([('weight', 3, self.listbox), right_pile], dividechars=0)
 
-        loop = urwid.MainLoop(layout, unhandled_input=self.show_or_exit)
+        loop = urwid.MainLoop(layout, palette=palette, unhandled_input=self.show_or_exit)
+
+        fileName = ""
+        readDialogCSVFile(fileName)
         loop.run()
+
 ui = DashboardUI()
 ui.show()
