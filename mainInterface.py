@@ -1,15 +1,23 @@
 import urwid
+import sys
+import curses
 
+def set_window_title(title):
+    curses.setupterm()
+    sys.stdout.write("\x1b]2;{}\x07".format(title))
+    sys.stdout.flush()
 
 class DashboardUI:
     orders_txt: urwid.widget.Text
 
     def show_or_exit(self, key):
+        set_window_title("MACKENZIE.EXE")  # Set window title immediately
         if key in ('q', 'Q'):
             raise urwid.ExitMainLoop()
         self.orders_txt.set_text(repr(key))
 
     def show(self):
+        
         algo_view = urwid.Text(u"Main Content Goes Here")
         algo_view_fill = urwid.Filler(algo_view, 'top')
         algo_view_linebox = urwid.LineBox(algo_view_fill,
@@ -36,7 +44,7 @@ class DashboardUI:
 
         right_pile = urwid.Pile([orders_linebox, counters_linebox, resources_linebox])
 
-        layout = urwid.Columns([algo_view_linebox, right_pile], dividechars=0)
+        layout = urwid.Columns([('weight', 3, algo_view_linebox), right_pile], dividechars=0)
 
         loop = urwid.MainLoop(layout, unhandled_input=self.show_or_exit)
         loop.run()
