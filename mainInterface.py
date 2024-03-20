@@ -65,12 +65,6 @@ class DashboardUI:
         self.listbox.add_line(line, character)
 
     def show(self):
-        algo_view = urwid.Text(u"Main Content Goes Here")
-        algo_view_fill = urwid.Filler(algo_view, 'top')
-        algo_view_linebox = urwid.LineBox(algo_view_fill,
-                                          tlcorner=u'', tline=u'', lline=u'', trcorner=u'',
-                                          blcorner=u'', rline=u'│', bline=u'', brcorner=u'│')
-
         self.orders_txt = urwid.Text(u"Orders\norder2\norder3")
         orders_fill = urwid.Filler(self.orders_txt, 'bottom')
         orders_linebox = urwid.LineBox(orders_fill,
@@ -95,8 +89,8 @@ class DashboardUI:
 
         loop = urwid.MainLoop(layout, palette=palette, unhandled_input=self.show_or_exit)
 
-        fileName = ""
-        readDialogCSVFile(fileName)
+        
+        readDialogCSVFile("C:\\Users\\madti\\Downloads\\TestProject\\dfile.csv")
         loop.run()
 
 ui = DashboardUI()
