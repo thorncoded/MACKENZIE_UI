@@ -17,12 +17,12 @@ class Grid:
             for j in range(self.columns):
                 # Generate cell text based on its position in the grid
                 cell_text = str((i * self.columns) + j + 1)
-                # Apply different palettes based on row parity
+                # Apply different attributes based on row parity
                 if i % 2 == 0:
-                    palette = 'cell'
+                    attrmap = urwid.AttrMap(urwid.Text(cell_text, align='center'), 'cell')
                 else:
-                    palette = 'header'
-                row.append(create_text_widget(cell_text, palette))
+                    attrmap = urwid.AttrMap(urwid.Text(cell_text, align='center'), 'header')
+                row.append(attrmap)
             grid_content.append(row)
         return grid_content
 
@@ -30,12 +30,12 @@ class Grid:
         # Get the first row of the grid
         return [row[0] for row in self.grid_content]
 
-    def apply_palettes_to_first_row(self):
-        # Apply different palettes to each cell in the first row
+    def apply_attrmaps_to_first_row(self):
+        # Apply different attribute maps to each cell in the first row
         first_row = self.get_first_row()
         for i, cell in enumerate(first_row):
-            palette_index = i + 1
-            cell.original_widget = create_text_widget(str(palette_index), f'palette{palette_index}')
+            attrmap_index = i + 1
+            cell.original_widget = urwid.AttrMap(urwid.Text(str(attrmap_index), align='center'), f'attrmap{attrmap_index}')
 
     def transpose(self):
         # Transpose the grid content to switch rows and columns
@@ -50,24 +50,20 @@ def show_or_exit(key: str) -> None:
     if key in {"q", "Q"}:
         raise urwid.ExitMainLoop()
 
-def create_text_widget(text: str, palette: str) -> urwid.Widget:
-    # Create a text widget with the specified text and palette
-    return urwid.AttrMap(urwid.Text(text, align='center'), palette)
-
-# Define palettes with color attributes for the grid elements
-palette = [
+# Define attribute maps with color attributes for the grid elements
+attrmap = [
     ('default', 'default', 'default'),
     ('header', 'white', 'dark blue'),
     ('cell', 'white', 'dark gray'),
-    ('palette1', 'dark magenta', 'light magenta'),
-    ('palette2', 'dark green', 'light green'),
-    ('palette3', 'light magenta', 'light gray'),
+    ('attrmap1', 'dark magenta', 'light magenta'),
+    ('attrmap2', 'dark green', 'light green'),
+    ('attrmap3', 'light magenta', 'light gray'),
 ]
 
 # Create a Grid instance with 8 rows and 8 columns
 grid = Grid(8, 8)
-# Apply different palettes to each cell in the first row
-grid.apply_palettes_to_first_row()
+# Apply different attribute maps to each cell in the first row
+grid.apply_attrmaps_to_first_row()
 # Transpose the grid content to switch rows and columns
 grid.transpose()
 # Create Rows for each column
@@ -78,6 +74,6 @@ pile = urwid.Pile(rows)
 fill = urwid.Filler(pile, "top")
 
 # Create the main loop
-loop = urwid.MainLoop(fill, palette=palette, unhandled_input=show_or_exit)
+loop = urwid.MainLoop(fill, palette=attrmap, unhandled_input=show_or_exit)
 # Run the main loop
 loop.run()
