@@ -16,7 +16,9 @@ class Grid:
             row = []
             for j in range(self.columns):
                 # Generate cell text based on its position in the grid
-                cell_text = str((i * self.columns) + j + 1)
+                #cell_text = str((i * self.columns) + j + 1)
+                #no lol
+                cell_text = ""
                 # Apply different attributes based on row parity
                 if i % 2 == 0:
                     attrmap = urwid.AttrMap(urwid.Text(cell_text, align='center'), 'cell')
@@ -26,16 +28,15 @@ class Grid:
             grid_content.append(row)
         return grid_content
 
-    def get_first_row(self):
-        # Get the first row of the grid
-        return [row[0] for row in self.grid_content]
-
-    def apply_attrmaps_to_first_row(self):
-        # Apply different attribute maps to each cell in the first row
-        first_row = self.get_first_row()
-        for i, cell in enumerate(first_row):
-            attrmap_index = i + 1
-            cell.original_widget = urwid.AttrMap(urwid.Text(str(attrmap_index), align='center'), f'attrmap{attrmap_index}')
+    def apply_attrmaps_to_full_grid(self):
+        # Apply different attribute maps to each cell in the grid
+        for i in range(self.rows):
+            for j in range(self.columns):
+                cell = self.grid_content[i][j]
+                if i % 2 == 0:
+                    cell.original_widget = urwid.AttrMap(urwid.Text("", align='center'), 'cell')
+                else:
+                    cell.original_widget = urwid.AttrMap(urwid.Text("", align='center'), 'header')
 
     def transpose(self):
         # Transpose the grid content to switch rows and columns
@@ -55,15 +56,12 @@ attrmap = [
     ('default', 'default', 'default'),
     ('header', 'white', 'dark blue'),
     ('cell', 'white', 'dark gray'),
-    ('attrmap1', 'dark magenta', 'light magenta'),
-    ('attrmap2', 'dark green', 'light green'),
-    ('attrmap3', 'light magenta', 'light gray'),
 ]
 
-# Create a Grid instance with 8 rows and 8 columns
-grid = Grid(8, 8)
-# Apply different attribute maps to each cell in the first row
-grid.apply_attrmaps_to_first_row()
+# Create a Grid instance with 16 rows and 16 columns
+grid = Grid(16, 16)
+# Apply different attribute maps to each cell in the grid
+grid.apply_attrmaps_to_full_grid()
 # Transpose the grid content to switch rows and columns
 grid.transpose()
 # Create Rows for each column
