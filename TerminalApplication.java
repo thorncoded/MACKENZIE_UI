@@ -23,36 +23,51 @@ import javafx.scene.text.TextFlow;
 import javafx.stage.Stage;
 import javafx.util.Duration;
 
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
+import java.io.*;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Scanner;
 
 public class TerminalApplication extends Application {
 
     private TextFlow terminalOutput;
-    private String[] lines = {"Line 1", "Line 2", "Line 3"}; // Example array of lines
+    ArrayList<String> lines = new ArrayList<String>();
     private int lineIndex = 0; // Index to keep track of which line to display next
     private ObservableList<String> lineQueue = FXCollections.observableArrayList();
+    private boolean isTyping = false; // Flag to indicate if typing is in progress
 
+
+    private void readFile(String fileName) {
+        try (InputStream inputStream = this.getClass().getResourceAsStream(fileName);
+             BufferedReader br = new BufferedReader(new InputStreamReader(inputStream))) {
+            String line;
+            while ((line = br.readLine()) != null) {
+                lines.add(line);
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
     private void processCommand(String command) {
         // Display the command entered by the user in green
         appendText("> " + command + "\n", Color.GREEN);
         // Simulate typing effect for "Command not recognized"
-        slowType("Command not recognized. Type 'help' for a list of commands.\n", Color.MAGENTA, null);
+        slowType("Command not recognized. Type 'help' for a list of commands.\n", Color.MAGENTA);
     }
 
-    private void slowType(String text, Color color, Runnable onComplete) {
+    private void slowType(String text, Color color) {
         Timeline timeline = new Timeline();
         for (int i = 0; i < text.length(); i++) {
             final int index = i;
             KeyFrame keyFrame = new KeyFrame(Duration.millis(50 * i), event -> {
                 appendText(text.substring(index, index + 1), color);
-                if (index == text.length() - 1 && onComplete != null) {
-                    onComplete.run(); // Execute the callback after typing completes
+                if (index == text.length() - 1) {
+                    isTyping = false; // Reset typing flag when typing completes
                 }
             });
             timeline.getKeyFrames().add(keyFrame);
         }
+        isTyping = true; // Set typing flag when typing starts
         timeline.play();
     }
 
@@ -64,7 +79,7 @@ public class TerminalApplication extends Application {
 
     private void addToQueue(String line) {
         lineQueue.add(line);
-        if (lineQueue.size() == 1) {
+        if (!isTyping) {
             startTypingFromQueue();
         }
     }
@@ -72,13 +87,16 @@ public class TerminalApplication extends Application {
     private void startTypingFromQueue() {
         if (!lineQueue.isEmpty()) {
             String nextLine = lineQueue.remove(0);
-            slowType(nextLine + "\n", Color.PINK, this::startTypingFromQueue);
+            slowType(nextLine + "\n", Color.MAGENTA);
         }
     }
 
     @Override
     public void start(Stage primaryStage) throws FileNotFoundException {
-        primaryStage.setTitle("JavaFX Terminal");
+        readFile("test1.txt");
+        //InputStream stream = this.getClass().getResourceAsStream("test1.txt");
+        //System.out.println(stream != null);
+        primaryStage.setTitle("MACKENZIE.EXE");
 
         // Create a TextFlow for displaying output
         terminalOutput = new TextFlow();
@@ -91,7 +109,7 @@ public class TerminalApplication extends Application {
             processCommand(inputField.getText());
             inputField.clear(); // Clear the input field after processing the command
         });
-        inputField.setPromptText("Type your command here");
+        inputField.setPromptText("AWAITING COMMAND.");
 
         // Create side panel
         VBox sidePanel = new VBox();
@@ -134,10 +152,10 @@ public class TerminalApplication extends Application {
 
         // Add a key event handler to the scene to listen for key presses
         scene.setOnKeyPressed(event -> {
-            if (event.getCode() == KeyCode.Q && lineQueue.isEmpty()) {
-                // Add the next line from the array to the queue only if the queue is empty
-                addToQueue(lines[lineIndex]);
-                lineIndex = (lineIndex + 1) % lines.length; // Move to the next line, wrap around if necessary
+            if (event.getCode() == KeyCode.Q && !isTyping) {
+                // Add the next line from the array to the queue only if typing is not in progress
+                addToQueue(lines.get(lineIndex));
+                lineIndex = (lineIndex + 1) % lines.size(); // Move to the next line, wrap around if necessary
             }
         });
 
