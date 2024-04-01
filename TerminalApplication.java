@@ -23,22 +23,23 @@ import javafx.scene.text.TextFlow;
 import javafx.stage.Stage;
 import javafx.util.Duration;
 
-import java.io.*;
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Scanner;
 
 public class TerminalApplication extends Application {
 
+    private static final int MAX_LINES = 20; // Maximum number of lines to display
     private TextFlow terminalOutput;
-    ArrayList<String> lines = new ArrayList<String>();
+    private ArrayList<String> lines = new ArrayList<>();
     private int lineIndex = 0; // Index to keep track of which line to display next
     private ObservableList<String> lineQueue = FXCollections.observableArrayList();
     private boolean isTyping = false; // Flag to indicate if typing is in progress
 
-
     private void readFile(String fileName) {
-        try (InputStream inputStream = this.getClass().getResourceAsStream(fileName);
+        try (InputStream inputStream = getClass().getResourceAsStream(fileName);
              BufferedReader br = new BufferedReader(new InputStreamReader(inputStream))) {
             String line;
             while ((line = br.readLine()) != null) {
@@ -48,6 +49,7 @@ public class TerminalApplication extends Application {
             e.printStackTrace();
         }
     }
+
     private void processCommand(String command) {
         // Display the command entered by the user in green
         appendText("> " + command + "\n", Color.GREEN);
@@ -57,17 +59,23 @@ public class TerminalApplication extends Application {
 
     private void slowType(String text, Color color) {
         Timeline timeline = new Timeline();
-        for (int i = 0; i < text.length(); i++) {
-            final int index = i;
-            KeyFrame keyFrame = new KeyFrame(Duration.millis(50 * i), event -> {
-                appendText(text.substring(index, index + 1), color);
-                if (index == text.length() - 1) {
-                    isTyping = false; // Reset typing flag when typing completes
-                }
-            });
-            timeline.getKeyFrames().add(keyFrame);
-        }
+        final int[] currentIndex = {0}; // Index to track the current character being typed
+
+        KeyFrame keyFrame = new KeyFrame(Duration.millis(50), event -> {
+            if (currentIndex[0] < text.length()) {
+                char character = text.charAt(currentIndex[0]);
+                appendText(Character.toString(character), color); // Append current character to the terminal output
+                currentIndex[0]++; // Move to the next character
+            } else {
+                isTyping = false; // Reset typing flag when typing completes
+                startTypingFromQueue(); // Start typing the next queued line
+                timeline.stop(); // Stop the timeline
+            }
+        });
+        timeline.getKeyFrames().add(keyFrame);
         isTyping = true; // Set typing flag when typing starts
+        timeline.setCycleCount(text.length()); // Set cycle count to the total number of characters
+        timeline.setOnFinished(event -> isTyping = false); // Reset isTyping flag when typing finishes
         timeline.play();
     }
 
@@ -75,6 +83,30 @@ public class TerminalApplication extends Application {
         Text textNode = new Text(text);
         textNode.setFill(color);
         terminalOutput.getChildren().add(textNode);
+
+        // Split the text into lines and count the number of lines
+        String fullText = terminalOutput.getChildren().stream()
+                .map(node -> ((Text) node).getText())
+                .reduce("", (a, b) -> a + b);
+
+        String[] lines = fullText.split("\n", -1); // Use -1 to ensure empty lines are preserved
+        int numLines = lines.length;
+
+        // Check if the maximum number of lines has been exceeded
+        if (numLines > MAX_LINES) {
+            // Calculate the length of the first line to remove it from the text
+            int firstLineLength = lines[0].length() + 1; // +1 to account for the newline character
+
+            // Remove the oldest complete line
+            terminalOutput.getChildren().remove(0);
+
+            // Remove the corresponding characters from the full text
+            fullText = fullText.substring(firstLineLength);
+
+            // Clear and re-add text nodes with the updated full text
+            terminalOutput.getChildren().clear();
+            appendText(fullText, color);
+        }
     }
 
     private void addToQueue(String line) {
@@ -92,10 +124,8 @@ public class TerminalApplication extends Application {
     }
 
     @Override
-    public void start(Stage primaryStage) throws FileNotFoundException {
+    public void start(Stage primaryStage) {
         readFile("test1.txt");
-        //InputStream stream = this.getClass().getResourceAsStream("test1.txt");
-        //System.out.println(stream != null);
         primaryStage.setTitle("MACKENZIE.EXE");
 
         // Create a TextFlow for displaying output
@@ -117,8 +147,7 @@ public class TerminalApplication extends Application {
         sidePanel.setSpacing(10);
 
         // Add pixel art image
-        FileInputStream input = new FileInputStream("src\\main\\java\\com\\example\\mackenzie\\makTest500.png");
-        Image pixelArtImage = new Image(input);
+        Image pixelArtImage = new Image(getClass().getResourceAsStream("makTest500.png"));
         ImageView imageView = new ImageView(pixelArtImage);
         imageView.setFitWidth(200); // Adjust as needed
         imageView.setFitHeight(200); // Adjust as needed
@@ -145,6 +174,7 @@ public class TerminalApplication extends Application {
         Scene scene = new Scene(root, 800, 400); // Increased width to accommodate side panel
         scene.setFill(Color.BLACK);
         primaryStage.setScene(scene);
+        primaryStage.setResizable(false);
         primaryStage.show();
 
         // Focus on input field when application starts
