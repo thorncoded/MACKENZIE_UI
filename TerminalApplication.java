@@ -31,24 +31,14 @@ import java.util.ArrayList;
 
 public class TerminalApplication extends Application {
 
-    private static final int MAX_LINES = 20; // Maximum number of lines to display
+    private static final int MAX_LINES = 23; // Maximum number of lines to display
     private TextFlow terminalOutput;
+    private LinkedList ll = new LinkedList("dialog.csv");
     private ArrayList<String> lines = new ArrayList<>();
     private int lineIndex = 0; // Index to keep track of which line to display next
     private ObservableList<String> lineQueue = FXCollections.observableArrayList();
     private boolean isTyping = false; // Flag to indicate if typing is in progress
 
-    private void readFile(String fileName) {
-        try (InputStream inputStream = getClass().getResourceAsStream(fileName);
-             BufferedReader br = new BufferedReader(new InputStreamReader(inputStream))) {
-            String line;
-            while ((line = br.readLine()) != null) {
-                lines.add(line);
-            }
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-    }
 
     private void processCommand(String command) {
         // Display the command entered by the user in green
@@ -125,9 +115,8 @@ public class TerminalApplication extends Application {
 
     @Override
     public void start(Stage primaryStage) {
-        readFile("test1.txt");
         primaryStage.setTitle("MACKENZIE.EXE");
-
+        ll.printList();
         // Create a TextFlow for displaying output
         terminalOutput = new TextFlow();
         terminalOutput.setStyle("-fx-font-family: Consolas; -fx-font-size: 12; -fx-background-color: black;");
@@ -184,8 +173,8 @@ public class TerminalApplication extends Application {
         scene.setOnKeyPressed(event -> {
             if (event.getCode() == KeyCode.Q && !isTyping) {
                 // Add the next line from the array to the queue only if typing is not in progress
-                addToQueue(lines.get(lineIndex));
-                lineIndex = (lineIndex + 1) % lines.size(); // Move to the next line, wrap around if necessary
+                addToQueue(ll.getNodeAtIndex(lineIndex).getLine());
+                lineIndex = (lineIndex + 1) % ll.getSize(); // Move to the next line, wrap around if necessary
             }
         });
 
