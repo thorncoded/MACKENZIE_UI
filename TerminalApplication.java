@@ -36,7 +36,7 @@ public class TerminalApplication extends Application {
     private LinkedList ll = new LinkedList("dialog.csv");
     private ArrayList<String> lines = new ArrayList<>();
     private int lineIndex = 0; // Index to keep track of which line to display next
-    private ObservableList<String> lineQueue = FXCollections.observableArrayList();
+    private ObservableList<Node> lineQueue = FXCollections.observableArrayList();
     private boolean isTyping = false; // Flag to indicate if typing is in progress
 
 
@@ -99,8 +99,9 @@ public class TerminalApplication extends Application {
         }
     }
 
-    private void addToQueue(String line) {
-        lineQueue.add(line);
+    // Modify addToQueue() to add nodes to lineQueue
+    private void addToQueue(Node node) {
+        lineQueue.add(node);
         if (!isTyping) {
             startTypingFromQueue();
         }
@@ -108,8 +109,21 @@ public class TerminalApplication extends Application {
 
     private void startTypingFromQueue() {
         if (!lineQueue.isEmpty()) {
-            String nextLine = lineQueue.remove(0);
-            slowType(nextLine + "\n", Color.MAGENTA);
+            Node nextNode = lineQueue.remove(0);
+            if (nextNode != null && nextNode.getLine() != null && !nextNode.getLine().isEmpty()) {
+                Color myColor;
+                if (nextNode.getCharacter().equals("sko")) {
+                    myColor = Color.web("#5e74d5");
+
+                }
+                else if (nextNode.getCharacter().equals("mak")) {
+                    myColor = Color.web("#fb01a1");
+                }
+                else {
+                    myColor = Color.GREEN;
+                }
+                slowType(nextNode.getLine() + "\n", myColor); // Use line from node
+            }
         }
     }
 
@@ -169,14 +183,17 @@ public class TerminalApplication extends Application {
         // Focus on input field when application starts
         Platform.runLater(inputField::requestFocus);
 
-        // Add a key event handler to the scene to listen for key presses
+// Add a key event handler to the scene to listen for key presses
         scene.setOnKeyPressed(event -> {
             if (event.getCode() == KeyCode.Q && !isTyping) {
-                // Add the next line from the array to the queue only if typing is not in progress
-                addToQueue(ll.getNodeAtIndex(lineIndex).getLine());
-                lineIndex = (lineIndex + 1) % ll.getSize(); // Move to the next line, wrap around if necessary
+                if (lineIndex < ll.getSize()) { // Check if end of file is reached
+                    // Add the next line from the array to the queue only if typing is not in progress
+                    addToQueue(ll.getNodeAtIndex(lineIndex));
+                    lineIndex++; // Increment the index
+                }
             }
         });
+
 
         // Add a mouse event handler to the root pane to remove focus from the input field when clicked outside
         root.setOnMouseClicked(event -> {
