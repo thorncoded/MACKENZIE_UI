@@ -33,18 +33,21 @@ public class TerminalApplication extends Application {
 
     private static final int MAX_LINES = 23; // Maximum number of lines to display
     private TextFlow terminalOutput;
-    private LinkedList ll = new LinkedList("dialog.csv");
+    private LinkedList ll = new LinkedList("part1.csv");
     private ArrayList<String> lines = new ArrayList<>();
     private int lineIndex = 0; // Index to keep track of which line to display next
     private ObservableList<Node> lineQueue = FXCollections.observableArrayList();
     private boolean isTyping = false; // Flag to indicate if typing is in progress
+    ImageView imageView;
+    Image originalImage;
+    Image lipsyncImage;
 
 
     private void processCommand(String command) {
         // Display the command entered by the user in green
-        appendText("> " + command + "\n", Color.GREEN);
+        appendText("\n" + "> " + command, Color.GREEN);
         // Simulate typing effect for "Command not recognized"
-        slowType("Command not recognized. Type 'help' for a list of commands.\n", Color.MAGENTA);
+        slowType("\nCommand not recognized. Type 'help' for a list of commands.", Color.MAGENTA);
     }
 
     private void slowType(String text, Color color) {
@@ -65,6 +68,43 @@ public class TerminalApplication extends Application {
         timeline.getKeyFrames().add(keyFrame);
         isTyping = true; // Set typing flag when typing starts
         timeline.setCycleCount(text.length()); // Set cycle count to the total number of characters
+        timeline.setOnFinished(event -> isTyping = false); // Reset isTyping flag when typing finishes
+        timeline.play();
+    }
+
+    private void slowType(Node node, Color color) {
+        String text = "\n" + node.getLine();
+        int visibleCharacterCount = node.getLine().length(); // Count of visible characters (excluding newline)
+        Timeline timeline = new Timeline();
+        final int[] currentIndex = {0}; // Index to track the current character being typed
+
+        // Check if the slow typing is associated with "mak"
+        boolean isMak = node.getCharacter().equals("MACKENZIE");
+
+        // Swap to another image when slow typing associated with "mak" starts
+        if (isMak) {
+            // Swap to another image
+            imageView.setImage(lipsyncImage);
+        }
+
+        KeyFrame keyFrame = new KeyFrame(Duration.millis(50), event -> {
+            System.out.println(isMak);
+            if (currentIndex[0] < text.length()) {
+                char character = text.charAt(currentIndex[0]);
+                appendText(Character.toString(character), color); // Append current character to the terminal output
+                currentIndex[0]++; // Move to the next character
+                if (currentIndex[0] == text.length() - 1 && isMak) {
+                    imageView.setImage(originalImage);
+                }
+            } else {
+                isTyping = false; // Reset typing flag when typing completes
+                startTypingFromQueue(); // Start typing the next queued line
+                timeline.stop(); // Stop the timeline
+            }
+        });
+        timeline.getKeyFrames().add(keyFrame);
+        isTyping = true; // Set typing flag when typing starts
+        timeline.setCycleCount(visibleCharacterCount); // Set cycle count to the total number of visible characters
         timeline.setOnFinished(event -> isTyping = false); // Reset isTyping flag when typing finishes
         timeline.play();
     }
@@ -112,17 +152,27 @@ public class TerminalApplication extends Application {
             Node nextNode = lineQueue.remove(0);
             if (nextNode != null && nextNode.getLine() != null && !nextNode.getLine().isEmpty()) {
                 Color myColor;
-                if (nextNode.getCharacter().equals("sko")) {
+                //TO-DO: Make this more efficient
+                if (nextNode.getCharacter().equals("skovak")) { //SKOVAK
                     myColor = Color.web("#5e74d5");
 
                 }
-                else if (nextNode.getCharacter().equals("mak")) {
+                else if (nextNode.getCharacter().equals("MACKENZIE")) { //MAKSUR
                     myColor = Color.web("#fb01a1");
                 }
-                else {
+                else { //LUCAS
                     myColor = Color.GREEN;
                 }
-                slowType(nextNode.getLine() + "\n", myColor); // Use line from node
+                String character = nextNode.getCharacter();
+                /*no slow type for lucas for now, might go a step further and create illusion of
+                word by word text but that's costly and might not be worth time */
+                if (character.equals("LUCAS")) {
+                    appendText("\n" + nextNode.getLine(), myColor);
+                }
+                else {
+                    slowType(nextNode, myColor); // Use line from node
+                }
+
             }
         }
     }
@@ -131,11 +181,13 @@ public class TerminalApplication extends Application {
     public void start(Stage primaryStage) {
         primaryStage.setTitle("MACKENZIE.EXE");
         ll.printList();
+
+
         // Create a TextFlow for displaying output
         terminalOutput = new TextFlow();
         terminalOutput.setStyle("-fx-font-family: Consolas; -fx-font-size: 12; -fx-background-color: black;");
 
-        // Create a text field for user input
+        // TextField for Future Input
         TextField inputField = new TextField();
         inputField.setStyle("-fx-font-family: Consolas; -fx-font-size: 12; -fx-background-color: black; -fx-text-fill: white;");
         inputField.setOnAction(event -> {
@@ -149,17 +201,20 @@ public class TerminalApplication extends Application {
         sidePanel.setAlignment(Pos.TOP_CENTER); // Set vertical alignment to TOP
         sidePanel.setSpacing(10);
 
-        // Add pixel art image
-        Image pixelArtImage = new Image(getClass().getResourceAsStream("makTest500.png"));
-        ImageView imageView = new ImageView(pixelArtImage);
+        // Add pixel art image and load lipsync one
+        originalImage = new Image(getClass().getResourceAsStream("makTest500.png"));
+        lipsyncImage = new Image(getClass().getResourceAsStream("talkgif1.gif"));
+        imageView = new ImageView(originalImage);
         imageView.setFitWidth(200); // Adjust as needed
         imageView.setFitHeight(200); // Adjust as needed
         sidePanel.getChildren().add(imageView);
 
-        // Add static information
-        Label staticInfoLabel = new Label("Static Information");
-        staticInfoLabel.setTextAlignment(TextAlignment.CENTER);
-        sidePanel.getChildren().add(staticInfoLabel);
+        // Add Status Pane
+        Image statusImage = new Image(getClass().getResourceAsStream("status.gif"));
+        ImageView statusImageView = new ImageView(statusImage);
+        statusImageView.setFitWidth(100);
+        statusImageView.setFitHeight(46);
+        sidePanel.getChildren().add(statusImageView);
 
         // Create a VBox to hold the TextFlow and TextField
         VBox centerBox = new VBox(10);
@@ -183,7 +238,7 @@ public class TerminalApplication extends Application {
         // Focus on input field when application starts
         Platform.runLater(inputField::requestFocus);
 
-// Add a key event handler to the scene to listen for key presses
+        // Add a key event handler to the scene to listen for key presses
         scene.setOnKeyPressed(event -> {
             if (event.getCode() == KeyCode.Q && !isTyping) {
                 if (lineIndex < ll.getSize()) { // Check if end of file is reached
