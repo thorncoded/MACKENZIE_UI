@@ -37,6 +37,7 @@ public class TerminalApplication extends Application {
     private ArrayList<String> lines = new ArrayList<>();
     private int lineIndex = 0; // Index to keep track of which line to display next
     private ObservableList<Node> lineQueue = FXCollections.observableArrayList();
+    private ArrayList<Color> lineColors = new ArrayList<>(); // ArrayList to store the colors of each line
     private boolean isTyping = false; // Flag to indicate if typing is in progress
     ImageView imageView;
     Image originalImage;
@@ -114,6 +115,9 @@ public class TerminalApplication extends Application {
         textNode.setFill(color);
         terminalOutput.getChildren().add(textNode);
 
+        // Add the color of the current line to the ArrayList
+        lineColors.add(color);
+
         // Split the text into lines and count the number of lines
         String fullText = terminalOutput.getChildren().stream()
                 .map(node -> ((Text) node).getText())
@@ -124,20 +128,16 @@ public class TerminalApplication extends Application {
 
         // Check if the maximum number of lines has been exceeded
         if (numLines > MAX_LINES) {
-            // Calculate the length of the first line to remove it from the text
-            int firstLineLength = lines[0].length() + 1; // +1 to account for the newline character
+            int linesToRemove = numLines - MAX_LINES;
 
-            // Remove the oldest complete line
-            terminalOutput.getChildren().remove(0);
-
-            // Remove the corresponding characters from the full text
-            fullText = fullText.substring(firstLineLength);
-
-            // Clear and re-add text nodes with the updated full text
-            terminalOutput.getChildren().clear();
-            appendText(fullText, color);
+            // Remove the oldest complete lines
+            for (int i = 0; i < linesToRemove; i++) {
+                terminalOutput.getChildren().remove(0);
+                lineColors.remove(0);
+            }
         }
     }
+
 
     // Modify addToQueue() to add nodes to lineQueue
     private void addToQueue(Node node) {
