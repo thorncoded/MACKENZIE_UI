@@ -14,6 +14,7 @@ import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
 import javafx.scene.input.KeyCode;
 import javafx.scene.layout.BorderPane;
+import javafx.scene.layout.Pane;
 import javafx.scene.layout.VBox;
 import javafx.scene.paint.Color;
 import javafx.scene.text.Font;
@@ -25,7 +26,7 @@ import java.util.ArrayList;
 
 public class TerminalApplication extends Application {
 
-    private static final int MAX_LINES = 23; // Maximum number of lines to display
+    private static final int MAX_LINES = 20; // Maximum number of lines to display
 
     private LinkedList ll = new LinkedList("part1.csv");
     private int lineIndex = 0; // Index to keep track of which line to display next
@@ -40,6 +41,7 @@ public class TerminalApplication extends Application {
     private ObservableList<Node> onScreenLines = FXCollections.observableArrayList();
 
     private TextFlow terminalOutput;
+    private TextFlow sideTextFlow;
     ImageView imageView;
     Image originalImage;
     Image lipsyncImage;
@@ -54,7 +56,7 @@ public class TerminalApplication extends Application {
         //create "ghost text" to try to calculate how many lines this is going to take up.
         Text ghostText = new Text(text);
         ghostText.setFill(node.getColor());
-        ghostText.setFont(new Font("Consolas", 12));
+        ghostText.setFont(new Font("Consolas", 14));
         double terminalWidth = terminalOutput.getWidth();
 
 
@@ -62,8 +64,6 @@ public class TerminalApplication extends Application {
         double layoutBoundsWidth = ghostText.getLayoutBounds().getWidth();
         double lineHeight = ghostText.getLineSpacing() + ghostText.getFont().getSize();
         int numLines = (int) Math.ceil(layoutBoundsWidth / terminalWidth);
-
-        System.out.println(numLines);
         return numLines;
 
     }
@@ -121,6 +121,30 @@ public class TerminalApplication extends Application {
         timeline.play();
     }
 
+    private void typeToSide(String text) {
+        int visibleCharacterCount = text.length(); // Count of visible characters (excluding newline)
+        Timeline timeline = new Timeline();
+        final int[] currentIndex = {0}; // Index to track the current character being typed
+
+
+        KeyFrame keyFrame = new KeyFrame(Duration.millis(200), event -> {
+            if (currentIndex[0] < text.length()) {
+                char character = text.charAt(currentIndex[0]);
+                appendToSide(Character.toString(character), Color.CYAN); // Append current character to the terminal output
+                currentIndex[0]++; // Move to the next character
+            } else {
+                isTyping = false; // Reset typing flag when typing completes
+                timeline.stop(); // Stop the timeline
+            }
+        });
+        timeline.getKeyFrames().add(keyFrame);
+        isTyping = true; // Set typing flag when typing starts
+        timeline.setCycleCount(visibleCharacterCount); // Set cycle count to the total number of visible characters
+        timeline.setOnFinished(event -> isTyping = false); // Reset isTyping flag when typing finishes
+        timeline.play();
+    }
+
+
 
     private void appendText(String text, Color color) {
         // Get the last text node in the terminal output
@@ -135,6 +159,16 @@ public class TerminalApplication extends Application {
     }
 
 
+    private void appendToSide(String text, Color color) {
+        Text lastTextNode = (Text) sideTextFlow.getChildren().get(sideTextFlow.getChildren().size() - 1);
+
+        // Append the new text to the existing text
+        lastTextNode.setText(lastTextNode.getText() + text);
+
+        // Update the color of the text
+        lastTextNode.setFill(color);
+
+    }
 
 
     private void appendMasterText(Node node) {
@@ -165,7 +199,7 @@ public class TerminalApplication extends Application {
         //create "ghost text" to try to calculate how many lines this is going to take up.
         Text realText = new Text();
         realText.setFill(node.getColor());
-        realText.setFont(new Font("Consolas", 12));
+        realText.setFont(new Font("Consolas", 14));
 
         terminalOutput.getChildren().add(realText);
 
@@ -206,6 +240,7 @@ public class TerminalApplication extends Application {
         }
     }
 
+
     @Override
     public void start(Stage primaryStage) {
         primaryStage.setTitle("MACKENZIE.EXE");
@@ -214,7 +249,7 @@ public class TerminalApplication extends Application {
 
         // Create a TextFlow for displaying output
         terminalOutput = new TextFlow();
-        terminalOutput.setStyle("-fx-font-family: Consolas; -fx-font-size: 12; -fx-background-color: black;");
+        terminalOutput.setStyle("-fx-font-family: Consolas; -fx-font-size: 14; -fx-background-color: black;");
 
         // TextField for Future Input
         TextField inputField = new TextField();
@@ -228,7 +263,8 @@ public class TerminalApplication extends Application {
         // Create side panel
         VBox sidePanel = new VBox();
         sidePanel.setAlignment(Pos.TOP_CENTER); // Set vertical alignment to TOP
-        sidePanel.setSpacing(10);
+        sidePanel.setSpacing(0);
+        sidePanel.setStyle("-fx-background-color: black;");
 
         // Add pixel art image and load lipsync one
         originalImage = new Image(getClass().getResourceAsStream("makTest500.png"));
@@ -243,7 +279,24 @@ public class TerminalApplication extends Application {
         ImageView statusImageView = new ImageView(statusImage);
         statusImageView.setFitWidth(200);
         statusImageView.setFitHeight(46);
-        sidePanel.getChildren().add(statusImageView);
+
+
+        Pane imageViewPane = new Pane();
+        imageViewPane.getChildren().add(statusImageView); // Add the ImageView to the Pane
+        imageViewPane.setPadding(new Insets(0, 0, 13, 0)); // Add bottom padding of 10 units
+
+        sidePanel.getChildren().add(imageViewPane);
+
+        // Add the new TextFlow for the side panel
+        sideTextFlow = new TextFlow();
+        sideTextFlow.setStyle("-fx-font-family: Consolas; -fx-background-color: black; -fx-font-size: 16;");
+        sidePanel.getChildren().add(sideTextFlow);
+        VBox.setVgrow(sideTextFlow, javafx.scene.layout.Priority.ALWAYS);
+
+        Text testText = new Text();
+        testText.setFill(Color.web("#02feff"));
+        testText.setFont(new Font("Consolas", 16));
+        sideTextFlow.getChildren().add(testText);
 
         // Create a VBox to hold the TextFlow and TextField
         VBox centerBox = new VBox(10);
@@ -262,6 +315,7 @@ public class TerminalApplication extends Application {
         scene.setFill(Color.BLACK);
         primaryStage.setScene(scene);
         primaryStage.setResizable(false);
+        primaryStage.getIcons().add(new Image(TerminalApplication.class.getResourceAsStream("maktest500.png")));
         primaryStage.show();
 
         // Focus on input field when application starts
@@ -276,6 +330,16 @@ public class TerminalApplication extends Application {
                     lineIndex++; // Increment the index
                 }
             }
+
+            if (event.getCode() == KeyCode.Y && !isTyping) {
+                typeToSide("DISPENSING NOW:\nZOLPIDEM\n15mg");
+            }
+
+            if (event.getCode() == KeyCode.T) {
+                SkovakApplication sk = new SkovakApplication();
+                sk.createNewStage();
+            }
+
         });
 
 
