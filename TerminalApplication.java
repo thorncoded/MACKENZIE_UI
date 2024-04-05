@@ -25,11 +25,10 @@ import java.util.ArrayList;
 
 public class TerminalApplication extends Application {
 
-    private static final int MAX_LINES = 10; // Maximum number of lines to display
+    private static final int MAX_LINES = 23; // Maximum number of lines to display
 
-    private LinkedList ll = new LinkedList("test2.csv");
+    private LinkedList ll = new LinkedList("part1.csv");
     private int lineIndex = 0; // Index to keep track of which line to display next
-    private int currentOnScreenRows = 0;
 
     private ArrayList<Color> lineColors = new ArrayList<>(); // ArrayList to store the colors of each line
     private boolean isTyping = false; // Flag to indicate if typing is in progress
@@ -83,34 +82,12 @@ public class TerminalApplication extends Application {
         // Display the command entered by the user in green
         appendText("\n" + "> " + command, Color.GREEN);
         // Simulate typing effect for "Command not recognized"
-        slowType("\nCommand not recognized. Type 'help' for a list of commands.", Color.MAGENTA);
-    }
-
-    private void slowType(String text, Color color) {
-        Timeline timeline = new Timeline();
-        final int[] currentIndex = {0}; // Index to track the current character being typed
-
-        KeyFrame keyFrame = new KeyFrame(Duration.millis(50), event -> {
-            if (currentIndex[0] < text.length()) {
-                char character = text.charAt(currentIndex[0]);
-                appendText(Character.toString(character), color); // Append current character to the terminal output
-                currentIndex[0]++; // Move to the next character
-            } else {
-                isTyping = false; // Reset typing flag when typing completes
-                startTypingFromQueue(); // Start typing the next queued line
-                timeline.stop(); // Stop the timeline
-            }
-        });
-        timeline.getKeyFrames().add(keyFrame);
-        isTyping = true; // Set typing flag when typing starts
-        timeline.setCycleCount(text.length()); // Set cycle count to the total number of characters
-        timeline.setOnFinished(event -> isTyping = false); // Reset isTyping flag when typing finishes
-        timeline.play();
+        //slowType("\nCommand not recognized. Type 'help' for a list of commands.", Color.MAGENTA);
     }
 
     private void slowType(Node node) {
         String text = "\n" + node.getLine();
-        int visibleCharacterCount = node.getLine().length(); // Count of visible characters (excluding newline)
+        int visibleCharacterCount = text.length(); // Count of visible characters (excluding newline)
         Timeline timeline = new Timeline();
         final int[] currentIndex = {0}; // Index to track the current character being typed
 
@@ -128,7 +105,7 @@ public class TerminalApplication extends Application {
                 char character = text.charAt(currentIndex[0]);
                 appendText(Character.toString(character), node.getColor()); // Append current character to the terminal output
                 currentIndex[0]++; // Move to the next character
-                if (currentIndex[0] == text.length() - 1 && isMak) { //if we've reached the end and MAKSUR was talking, switch back to original image
+                if (currentIndex[0] == text.length() && isMak) { //if we've reached the end and MAKSUR was talking, switch back to original image
                     imageView.setImage(originalImage);
                 }
             } else {
@@ -144,6 +121,7 @@ public class TerminalApplication extends Application {
         timeline.play();
     }
 
+
     private void appendText(String text, Color color) {
         // Get the last text node in the terminal output
         Text lastTextNode = (Text) terminalOutput.getChildren().get(terminalOutput.getChildren().size() - 1);
@@ -154,8 +132,6 @@ public class TerminalApplication extends Application {
         // Update the color of the text
         lastTextNode.setFill(color);
 
-        // Add the color of the current line to the ArrayList
-        lineColors.add(color);
     }
 
 
@@ -166,7 +142,7 @@ public class TerminalApplication extends Application {
         if it exceeds maximum line count, the oldest one is removed. while this is going on, make
         sure that the lipsync for MACKENZIE plays.
          */
-        
+
         // Check if the node is associated with MACKENZIE.
         boolean isMak = node.getCharacter().equals("MACKENZIE");
 
@@ -181,12 +157,10 @@ public class TerminalApplication extends Application {
             Node removedObject = onScreenLines.remove(0); // Remove the first object (FIFO)
             System.out.println("Removed: " + removedObject.getLine()); // Optional: Print removed object
             terminalOutput.getChildren().remove(0);
-            lineColors.remove(0);
         }
 
         //CREATE NEW NODE NOW.
         onScreenLines.add(node);
-        lineColors.add(node.getColor());
 
         //create "ghost text" to try to calculate how many lines this is going to take up.
         Text realText = new Text();
@@ -244,7 +218,7 @@ public class TerminalApplication extends Application {
 
         // TextField for Future Input
         TextField inputField = new TextField();
-        inputField.setStyle("-fx-font-family: Consolas; -fx-font-size: 12; -fx-background-color: black; -fx-text-fill: white;");
+        inputField.setStyle("-fx-font-family: Consolas; -fx-font-size: 12; -fx-background-color: #312F2F; -fx-text-fill: white;");
         inputField.setOnAction(event -> {
             processCommand(inputField.getText());
             inputField.clear(); // Clear the input field after processing the command
@@ -265,9 +239,9 @@ public class TerminalApplication extends Application {
         sidePanel.getChildren().add(imageView);
 
         // Add Status Pane
-        Image statusImage = new Image(getClass().getResourceAsStream("status.gif"));
+        Image statusImage = new Image(getClass().getResourceAsStream("statusbiggerwip.gif"));
         ImageView statusImageView = new ImageView(statusImage);
-        statusImageView.setFitWidth(100);
+        statusImageView.setFitWidth(200);
         statusImageView.setFitHeight(46);
         sidePanel.getChildren().add(statusImageView);
 
