@@ -7,7 +7,11 @@ public class Node {
     String character;
     String line;
     String fileLocation;
-    //Color color;
+    Color color;
+
+
+
+    Integer linesOnScreen;
 
     Node next;
 
@@ -35,12 +39,12 @@ public class Node {
         this.fileLocation = fileLocation;
     }
 
-   /* public void setColor(String character) {
+    public void setColor(String character) {
         if (character.equals("skovak")) { //SKOVAK
             this.color = Color.web("#5e74d5");
 
         }
-        else if (character.equals("skovak")) { //MAKSUR
+        else if (character.equals("MACKENZIE")) { //MAKSUR
             this.color = Color.web("#fb01a1");
         }
         else { //LUCAS
@@ -50,7 +54,15 @@ public class Node {
 
     public Color getColor() {
         return color;
-    } */
+    }
+
+    public Integer getLinesOnScreen() {
+        return linesOnScreen;
+    }
+
+    public void setLinesOnScreen(Integer linesOnScreen) {
+        this.linesOnScreen = linesOnScreen;
+    }
 
     public Node getNext() {
         return next;
@@ -67,17 +79,16 @@ public class Node {
         setCharacter(character);
         setLine(line);
         setFileLocation(fileLocation);
+        setColor(character);
     }
 
     Node(String character, String line) {
         setCharacter(character);
         setLine(line);
         setFileLocation("Null");
+        setColor(character);
     }
 
 
-    Node(String line) {
-        setLine(line);
-    }
 
 }
